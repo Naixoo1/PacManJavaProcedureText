@@ -141,7 +141,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         return valid;
     }
 
-    char nextDirection = 'R';
+    char nextDirection = ' ';
 
     public void setNextDirection(char dir) {
         this.nextDirection = dir;
@@ -167,9 +167,12 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
     }
 
     public void applyBufferedDirection() {
-        if (canMove(pacman, nextDirection)) {
-            pacman.updateDirection(nextDirection);
-            updatePacmanImage();
+        if (nextDirection != ' ' && canMove(pacman, nextDirection)) {
+            if (pacman.direction != nextDirection || (pacman.velocityX == 0 && pacman.velocityY == 0)) {
+                pacman.direction = nextDirection;
+                pacman.updateVelocity();
+                updatePacmanImage();
+            }
         }
     }
 
@@ -464,6 +467,8 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         pacman.reset();
         pacman.velocityX = 0;
         pacman.velocityY = 0;
+        pacman.image = pacmanRightImage;
+        nextDirection = ' ';
         scaredTimer = 0;
         for (Block ghost : ghosts) {
             ghost.reset();
@@ -483,14 +488,7 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
         }
     }
 
-    @Override
-    public void keyTyped(KeyEvent e) {}
-
-    @Override
-    public void keyPressed(KeyEvent e) {}
-
-    @Override
-    public void keyReleased(KeyEvent e) {
+    public void handleKeyInput(int keyCode) {
         if (gameOver) {
             loadMap();
             resetPositions();
@@ -498,32 +496,39 @@ public class PacMan extends JPanel implements ActionListener, KeyListener {
             score = 0;
             gameOver = false;
             gameLoop.start();
-        }
-        // System.out.println("KeyEvent: " + e.getKeyCode());
-        if (e.getKeyCode() == KeyEvent.VK_UP) {
-            pacman.updateDirection('U');
-        }
-        else if (e.getKeyCode() == KeyEvent.VK_DOWN) {
-            pacman.updateDirection('D');
-        }
-        else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
-            pacman.updateDirection('L');
-        }
-        else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
-            pacman.updateDirection('R');
+            return;
         }
 
-        if (pacman.direction == 'U') {
-            pacman.image = pacmanUpImage;
+        char dir = ' ';
+        if (keyCode == KeyEvent.VK_UP || keyCode == KeyEvent.VK_W) {
+            dir = 'U';
         }
-        else if (pacman.direction == 'D') {
-            pacman.image = pacmanDownImage;
+        else if (keyCode == KeyEvent.VK_DOWN || keyCode == KeyEvent.VK_S) {
+            dir = 'D';
         }
-        else if (pacman.direction == 'L') {
-            pacman.image = pacmanLeftImage;
+        else if (keyCode == KeyEvent.VK_LEFT || keyCode == KeyEvent.VK_A) {
+            dir = 'L';
         }
-        else if (pacman.direction == 'R') {
-            pacman.image = pacmanRightImage;
+        else if (keyCode == KeyEvent.VK_RIGHT || keyCode == KeyEvent.VK_D) {
+            dir = 'R';
         }
+
+        if (dir != ' ') {
+            setNextDirection(dir);
+            applyBufferedDirection();
+        }
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {}
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        handleKeyInput(e.getKeyCode());
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+        handleKeyInput(e.getKeyCode());
     }
 }

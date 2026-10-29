@@ -226,12 +226,106 @@ public class PacManTest {
         System.out.println("testReviewFocusGhostHouseExit passed");
     }
 
+    public static void testLeftAndRightArrowMovement() {
+        PacMan game = new PacMan();
+        if (game.gameLoop != null) game.gameLoop.stop();
+
+        int startX = game.pacman.x;
+        int startY = game.pacman.y;
+
+        // Press Left arrow
+        java.awt.event.KeyEvent leftPress = new java.awt.event.KeyEvent(
+            game, java.awt.event.KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, java.awt.event.KeyEvent.VK_LEFT, ' '
+        );
+        game.keyPressed(leftPress);
+
+        if (game.pacman.direction != 'L') {
+            throw new AssertionError("Pressing Left arrow did not set direction to 'L'. Got: " + game.pacman.direction);
+        }
+        if (game.getNextDirection() != 'L') {
+            throw new AssertionError("Pressing Left arrow did not set nextDirection to 'L'. Got: " + game.getNextDirection());
+        }
+
+        // Advance 1 game tick
+        game.move();
+        if (game.pacman.x != startX - 8) {
+            throw new AssertionError("Pacman did not move left by 8 pixels. Expected: " + (startX - 8) + ", got: " + game.pacman.x);
+        }
+        if (game.pacman.direction != 'L') {
+            throw new AssertionError("Pacman direction reverted from 'L'. Got: " + game.pacman.direction);
+        }
+
+        // Now press Right arrow while moving left
+        java.awt.event.KeyEvent rightPress = new java.awt.event.KeyEvent(
+            game, java.awt.event.KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, java.awt.event.KeyEvent.VK_RIGHT, ' '
+        );
+        game.keyPressed(rightPress);
+
+        if (game.pacman.direction != 'R') {
+            throw new AssertionError("Pressing Right arrow did not set direction to 'R'. Got: " + game.pacman.direction);
+        }
+        if (game.getNextDirection() != 'R') {
+            throw new AssertionError("Pressing Right arrow did not set nextDirection to 'R'. Got: " + game.getNextDirection());
+        }
+
+        // Advance 1 game tick
+        game.move();
+        if (game.pacman.x != startX) {
+            throw new AssertionError("Pacman did not move right by 8 pixels. Expected: " + startX + ", got: " + game.pacman.x);
+        }
+        if (game.pacman.direction != 'R') {
+            throw new AssertionError("Pacman direction reverted from 'R'. Got: " + game.pacman.direction);
+        }
+
+        System.out.println("testLeftAndRightArrowMovement passed");
+    }
+
+    public static void testBufferedDirectionAtJunction() {
+        PacMan game = new PacMan();
+        if (game.gameLoop != null) game.gameLoop.stop();
+
+        // PacMan at (7 * 32, 15 * 32), moving right towards (8 * 32, 15 * 32)
+        // At col 7, row 14: 'X' (wall above)
+        // At col 8, row 14: ' ' (open passage above)
+        game.pacman.x = 7 * 32;
+        game.pacman.y = 15 * 32;
+        game.pacman.direction = 'R';
+        game.pacman.updateVelocity();
+
+        // Buffer UP turn while wall is above at col 7
+        game.handleKeyInput(java.awt.event.KeyEvent.VK_UP);
+        if (game.pacman.direction != 'R') {
+            throw new AssertionError("Pacman turned into wall prematurely. direction=" + game.pacman.direction);
+        }
+        if (game.getNextDirection() != 'U') {
+            throw new AssertionError("nextDirection was not buffered as 'U'");
+        }
+
+        // Move forward until the junction opens and buffered turn is executed
+        int steps = 0;
+        while (game.pacman.direction != 'U' && steps < 10) {
+            game.move();
+            steps++;
+        }
+
+        if (game.pacman.x != 8 * 32) {
+            throw new AssertionError("Pacman did not arrive at junction at col 8. x=" + game.pacman.x);
+        }
+        if (game.pacman.direction != 'U') {
+            throw new AssertionError("Pacman did not execute buffered UP turn at junction. direction=" + game.pacman.direction);
+        }
+
+        System.out.println("testBufferedDirectionAtJunction passed");
+    }
+
     public static void main(String[] args) {
         testTunnelWrap();
         testPowerPelletsLoaded();
         testPowerPelletEatsGhost();
         testGhostIntersectionTurning();
         testInputBuffering();
+        testLeftAndRightArrowMovement();
+        testBufferedDirectionAtJunction();
         testReviewFocusTunnelNoWallCollision();
         testReviewFocusDoubleEat();
         testReviewFocusEatenGhostImmunity();
